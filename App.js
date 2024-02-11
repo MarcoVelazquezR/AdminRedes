@@ -1,11 +1,18 @@
 //import { StatusBar } from 'expo-status-bar';
-import { Image, StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Button } from 'react-native';
+import React from 'react';
+import { Image, StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Button, Alert } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Dimensions } from 'react-native';
 
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from './firebase-config';
+
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+
+const Stack = createNativeStackNavigator();
 
 const uri = 'https://i.pinimg.com/originals/fc/18/27/fc1827a00ac5c7e414597fd87ebae1ca.jpg';
 const profilePic = 'https://img.a.transfermarkt.technology/portrait/big/88755-1684245748.jpg?lm=1';
@@ -20,26 +27,61 @@ function HomeScreen() {
   );
 }
 function LoginScreen() {
+
+  const [email, setEmail] = React.useState('')
+  const [password, setPassword] = React.useState('')
+  const navigation = useNavigation();
+
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  const handleCreateAccount = () => {
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        console.log('Account Created!')
+        const user = userCredential.user;
+        console.log(user)
+      })
+      .catch(error => {
+        console.log(error)
+        Alert.alert(error.message)
+      })
+  }
+
+  const handleSignIn = () => {
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        console.log('Signed In!')
+        const user = userCredential.user;
+        console.log(user)
+        navigation.navigate('Home');
+      })
+      .catch(error => {
+        console.log(error)
+      })
+  }
+
   return (
     <View style={styles.container}>
       <Image source={{ uri }} style={[styles.image, StyleSheet.absoluteFill]} />
       <ScrollView contentContainerStyle={styles.scrollView2}>
         <BlurView intensity={90}>
-          <View style={styles.login}> 
+          <View style={styles.login}>
             <Image source={{ uri: profilePic }} style={styles.profilePic} />
             <View>
               <Text style={{ fontSize: 17, fontWeight: '400', color: 'white' }}>E-mail</Text>
-              <TextInput style={styles.input} placeholder='correo@algo.algo' />
+              <TextInput onChangeText={(text) => setEmail(text)} style={styles.input} placeholder='correo@algo.algo' />
             </View>
             <View>
               <Text style={{ fontSize: 17, fontWeight: '400', color: 'white' }}>Password</Text>
-              <TextInput style={styles.input} placeholder='password' secureTextEntry={true} />
+              <TextInput onChangeText={(text) => setPassword(text)} style={styles.input} placeholder='password' secureTextEntry={true} />
             </View>
             <View>
-              <TouchableOpacity style={[styles.button, { backgroundColor: '#00CFEB90' }]}>
+              <TouchableOpacity onPress={handleSignIn} style={[styles.button, { backgroundColor: '#00CFEB90' }]}>
                 <Text style={{ fontSize: 17, fontWeight: '400', color: 'white' }}>Login</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, { backgroundColor: '#6792F090' }]}>
+              <TouchableOpacity onPress={handleCreateAccount} style={[styles.button, { backgroundColor: '#6792F090' }]}>
                 <Text style={{ fontSize: 17, fontWeight: '400', color: 'white' }}>Create Account</Text>
               </TouchableOpacity>
             </View>
@@ -52,7 +94,12 @@ function LoginScreen() {
 
 export default function App() {
   return (
-    <LoginScreen/>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Login">
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Home" component={HomeScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
